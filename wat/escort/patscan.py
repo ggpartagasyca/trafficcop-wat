@@ -12,37 +12,23 @@ Options:
 \t-h, --help:\tprint help to STDOUT and quit
 \t-v, --verbose:\tverbose output
 \t-c, --category:\tmajor category of rules to apply (default: use all)
-\t-f, --family:\minor category of rules to apply (default: use all)
-\t-i, --indicator, --indic:\test precise rule by specifying name as X.Y.Z
-\t-j, --config:\t(extract) configuration name (not implemented yet)
-\t-t, --test:\tdon\'t assert to db, just print what you would do (not implemented)
+\t-f, --family:\tminor category of rules to apply (default: use all)
+\t-i, --indicator, --indic:\ttest precise rule by specifying name as X.Y.Z
+\t-t, --type\tfiletype (default: text)
 '''
 
 import sys
-import os
-from pymod import util
-import site
-
-import getopt
 import re
-import datetime
-
-from glob import iglob
-from pymod import jsonconf
-import time
-import hashlib
-from collections import defaultdict, Counter, namedtuple
-from socket import gethostname
-import traceback
+from collections import defaultdict
 import codecs
-from itertools import izip, chain, izip_longest
-from time import localtime, mktime
 import pprint
-
-import nltk
+import argparse
+import json
 from pymod.cstokensearcher import CaseSensitiveTokenSearcher as TokenSearcher
 
 from pymod.util import echo, isString, isSequence
+
+from wat.tool.wattok import Tokenizer
 
 VERSION = '1.14'
 __version__ = VERSION
@@ -112,10 +98,14 @@ def patternScan(tokenList, category=None, family=None, indicator=None):
     ts = TokenSearcher(tokenList)
     result = list()
     for phrase in gen():
-        # print phrase.pattern
-        match = ts.findall(phrase.pattern)
-        if match:
-            result.append((phrase, match))
+        matches = ts.findall(phrase.pattern)
+        if matches:
+            result.append({"category": phrase.category,
+                           "family": phrase.family,
+                           "indicator": phrase.indic,
+                           "pattern": phrase.pattern,
+                           "weight": phrase.weight,
+                           "matches": matches})
     return result
 
 class Phrase(object):
@@ -164,11 +154,13 @@ vocab = {
     
     "man": "|".join(["MAN", "MALE", "GENTLEMAN", "GENTELMAN", "GENTLMAN", "DUDE", "DATE", "GENT", "GUY", "BOY", "B0Y", "FELLOW", "FELLA", "PERSON"]),
     "men": "|".join(["MEN", "MALES", "GENTLEMEN", "GENTELMEN", "GENTLMEN", "DUDES", "DATES", "GENTS", "GUYS", "BOYS", "B0YS", "FELLOWS", "FELLAS", "PERSONS", "PEOPLE"]),
-    "black": "|".join(["BLACK", "AFRICAN-AMERICAN", "AA", "AFRO-AMERICAN", "AFRICANAMERICA", "AFROAMERICAN", "BLK"]),
-    "blacks": "|".join(["BLACKS", "BLACKMEN", "AFRICAN-AMERICANS", "AAS"]),
+    "black": "|".join(["BLACK", "AFRICAN-AMERICAN", "AA", "AFRO-AMERICAN", "AFRICANAMERICA", "AFROAMERICAN", "BLK", "NEGRO", "NIGGER", "SPADE"]),
+    "blacks": "|".join(["BLACKS", "BLACKMEN", "AFRICAN-AMERICANS", "AAS", "NEGROS", "NEGROES", "NIGGERS", "SPADES"]),
     "african": "|".join(["AFRICAN", "AFRO"]),
-    "white": "|".join(["WHITE", "CAUCASIAN", "CAUCASION"]),
-    "whites": "|".join(["WHITES", "CAUCASIANS", "CAUCASIONS", "WHITEMEN"]),
+    "white": "|".join(["WHITE", "CAUCASIAN", "CAUCASION", "CRACKER", "HONKY", "HONKIE", "HONKEY"]),
+    "whites": "|".join(["WHITES", "CAUCASIANS", "CAUCASIONS", "WHITEMEN", "CRACKERS", "HONKIES", "HONKEYS"]),
+    "thug": "|".join(["THUG", "THUGG", "PIMP"]),
+    "thugs": "|".join(["THUGS", "THUGGS", "PIMPS"]),
     
     "town": "|".join(["TOWN", "AREA", "CITY", "NEIGHBORHOOD"]),
     "new": "|".join(["NEW", "NU"]),
@@ -309,6 +301,7 @@ Phrase((2,1,2), "raceEthnicSelect", "no african american men", r"""(?V1)<(?i)NO>
 Phrase((2,1,3), "raceEthnicSelect", "no african-american men", r"""(?V1)<(?i)NO> <(?i)%s> <(?i)-> <(?i)AMERICAN> <(?i)%s>""" % (v('african'), v('man', 'men')), 1)
 # no blacks
 Phrase((2,1,4), "raceEthnicSelect", "no blacks", r"""(?V1)<(?i)NO> <(?i)%s>""" % (v('blacks')), 1)
+Phrase((2,1,5), "raceEthnicSelect", "no thugs", r"""(?V1)<(?i)NO> <(?i)%s>""" % (v('thugs')), 1)
 # white men only
 Phrase((2,2,1), "raceEthnicSelect", "white men only", r"""(?V1)<(?i)%s> <(?i)%s> <(?i)ONLY>""" % (v('white'), v('man', 'men')), 1)
 # only white men, only date/see white men
@@ -324,9 +317,17 @@ Phrase((2,3,2), "raceEthnicSelect", "prefer white men", r"""(?V1)<(?i)%s> <(?i)T
 # whites preferred
 Phrase((2,3,3), "raceEthnicSelect", "whites preferred", r"""(?V1)<(?i)%s> <(?i)%s>""" % (v('whites'), v('preferred')), 1)
 # prefer whites, prefer to date/see whites
-Phrase((2,3,4), "raceEthnicSelect", "prefer whites", r"""(?V1)<(?i)%s> <(?i)TO>? <(?i)DATE|SEE>? <(?i)%s>""" % (v('prefer'), v('whites')), 1)
+Phrase((2,3,4), "raceEthnicSelect", "prefer whites", r"""(?V1)<(?i)%s> <(?i)TO>? <(?i)DATE|SEE|SERVICE|SERVE>? <(?i)%s>""" % (v('prefer'), v('whites')), 1)
+
+### I don't service blacks, do not date blacks
+Phrase((2,4,1), "raceEthnicSelect", "do not see blacks", r"""(?V1)<(?i)DO> <(?i)NOT> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s>""" % (v('blacks')), 1)
+Phrase((2,4,2), "raceEthnicSelect", "do not see black men", r"""(?V1)<(?i)DO> <(?i)NOT> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s> <(?i)%s>""" % (v('black'), v('man', 'men')), 1)
+Phrase((2,4,3), "raceEthnicSelect", "dont see blacks", r"""(?V1)<(?i)DO>  <(?i)N'T> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s>""" % (v('blacks')), 1)
+Phrase((2,4,4), "raceEthnicSelect", "dont see black men", r"""(?V1)<(?i)DO> <(?i)N'T> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s> <(?i)%s>""" % (v('black'), v('man', 'men')), 1)
+Phrase((2,4,5), "raceEthnicSelect", "do not see thugs", r"""(?V1)<(?i)DO> <(?i)NOT> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s>""" % (v('thugs')), 1)
+Phrase((2,4,6), "raceEthnicSelect", "dont see thugs", r"""(?V1)<(?i)DO> <(?i)NOT> <(?i)DATE|SEE|SERVICE|SERVE> <(?i)%s>""" % (v('thugs')), 1)
 ### TBD
-### I don't service blacks
+
 
 ## SECTION 3: Limited duration: New arrival, limited time, etc.
 # new in town
@@ -455,52 +456,33 @@ Phrase((92,2,2), "allstar", "all star", r"""(?V1)<(?i)ALL> <->? (?V1)<(?i)STAR>"
 
 def main(argv=None):
     '''this is called if run from command line'''
-    # process command line arguments
-    if argv is None:
-        argv = sys.argv
-    try:
-        opts, args = getopt.getopt(argv[1:], "c:f:i:j:tvh",
-                                   ["echo=", "help",
-				    "config=",
-				    "test",
-                                    "verbose"])
-    except getopt.error, msg:
-        print >> sys.stderr, msg
-        print >> sys.stderr, "for help use --help"
-        sys.exit(2)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input')
+    parser.add_argument('-c','--category', required=False, 
+                        help='major category of rules to apply (default: use all)')
+    parser.add_argument('-f','--family', required=False,
+                        help='minor category of rules to apply (default: use all)')
+    parser.add_argument('-i','--indicator', required=False,
+                        help='Indicate precise rule as X.Y.Z')
+    parser.add_argument('-t','--type', required=False, default='text',
+                        help='input file type', choices=('text', 'html'))
+    parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
+    args=parser.parse_args()
 
-    # default options
-    my_category = None
-    my_family = None
-    my_indicator = None
-    my_config = CONFIG
-    my_test = TEST
-    my_verbose = VERBOSE
-    # process options
-    for o, a in opts:
-        if o in ("-h","--help"):
-            print __doc__
-            sys.exit(0)
-        if o in ("--echo", ):
-            print a
-        if o in ("-c", "--category", ):
-            my_category = a
-        if o in ("-f", "--family", ):
-            my_family = a
-        if o in ("-i", "--indic", "--indicator", ):
-            my_indicator = a
-        if o in ("-v", "--verbose", ):
-            my_verbose = True
-        if o in ("-j", "--config",):
-            my_config = a;
-        if o in ("-t", "--test",):
-            my_test = True;
-                                     
-    if my_verbose:
-        logger.debug("ARGV is %s" % (argv))
+    with codecs.open(args.input, 'r', encoding='utf-8') as f:
+        if args.type == 'html':
+            import pymod.htmltoken
+            text = f.read()
+            tok = Tokenizer(pymod.htmltoken.tokenize(text))
+            
+        else:
+            tok = Tokenizer(f.read())
 
-    tokens = args
-    pprint.pprint(patternScan(tokens, category=my_category, family=my_family, indicator=my_indicator))
+    tokens = [t for t in tok.genTokens()]
+
+    result = patternScan(tokens, category=args.category, 
+                         family=args.family, indicator=args.indicator)
+    print >> sys.stdout, json.dumps(result)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
