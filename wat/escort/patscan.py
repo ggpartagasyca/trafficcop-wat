@@ -470,19 +470,16 @@ def main(argv=None):
     args=parser.parse_args()
 
     with codecs.open(args.input, 'r', encoding='utf-8') as f:
+        text = f.read()
         if args.type == 'html':
-            import pymod.htmltoken
-            text = f.read()
-            tok = Tokenizer(pymod.htmltoken.tokenize(text))
-            
-        else:
-            tok = Tokenizer(f.read())
+            from pymod.htmlextract import extract_text
+            text = extract_text(text)
 
+    tok = Tokenizer(text)
     tokens = [t for t in tok.genTokens()]
-
     result = patternScan(tokens, category=args.category, 
                          family=args.family, indicator=args.indicator)
-    print >> sys.stdout, json.dumps(result)
+    print >> sys.stdout, json.dumps(result, indent=4)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
