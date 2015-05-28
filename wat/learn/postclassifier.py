@@ -9,7 +9,7 @@ import json
 
 from textblob.classifiers import NaiveBayesClassifier
 
-from filetags import filetags, experimentFile, urlBodyTokens, urlTitleTokens, canonUrl
+from filetags import filetags, urlBodyTokens, canonUrl
 
 from contextlib import contextmanager
 import time
@@ -21,7 +21,7 @@ def timeblock(label, verbose=False):
     finally:
         end = time.clock()
         if verbose:
-            print ('{} : {} seconds'.format(label, end - start))
+            print >> sys.stderr, ('  {} : {} seconds'.format(label, end - start))
 
 def safediv(numerator, denominator, default=None):
     if denominator:
@@ -70,7 +70,7 @@ class PostClassifier(object):
 
     def label(self, positiveClass):
         if self.verbose:
-            print "loading and labeling texts for %s" % positiveClass
+            print >> sys.stderr, "  loading and labeling texts for %s" % positiveClass
         self.labeledTexts = []
         for url,tags in filetags.iteritems():
             text = ' '.join(urlBodyTokens(canonUrl(url)))
@@ -80,7 +80,7 @@ class PostClassifier(object):
                 self.labeledTexts.append( (text, 'neg') )
         random.shuffle(self.labeledTexts)
         if self.verbose:
-            print "finished labeling %d texts" % len(self.labeledTexts)
+            print >> sys.stderr, "  finished labeling %d texts" % len(self.labeledTexts)
        
     def allocate(self):
         """Break up the entire set of labeled texts, typically in 80/10/10 ratio"""
@@ -98,7 +98,7 @@ class PostClassifier(object):
                 cl = NaiveBayesClassifier(self.trainingSet)
             self.classifier = cl
             if self.verbose:
-                print "classifier %r" % cl
+                print >> sys.stderr, "  classifier %r" % cl
 
     def testClassifier(self):
         tp = 0
@@ -122,15 +122,15 @@ class PostClassifier(object):
         f1 = safediv(2*tp, 2*tp + fp + fn)
         accuracy = self.classifier.accuracy(self.testSet)
         if self.verbose:
-            print """positiveClass: %s
-True Positive: %s
-True Negative: %s
-False Positive: %s
-False Negative: %s
-Precision: %s
-Recall: %s
-F1: %s
-Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, accuracy)
+            print >> sys.stderr, """  positiveClass: %s
+  True Positive: %s
+  True Negative: %s
+  False Positive: %s
+  False Negative: %s
+  Precision: %s
+  Recall: %s
+  F1: %s
+  Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, accuracy)
 
     def classifierFilename(self, positiveClass=None, indicator=None):
         positiveClass = positiveClass or self.positiveClass
@@ -143,7 +143,8 @@ Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, ac
     def saveClassifier(self):
         with timeblock("saving %s %s classifier" % (self.positiveClass, self.indicator), self.verbose):
             with open(self.classifierFilename(), 'wb') as f:
-                print "saving object %s of type %s to %s" % (self.classifier, type(self.classifier), self.classifierFilename())
+                if self.verbose:
+                    print >> sys.stderr, "  saving object %s of type %s to %s" % (self.classifier, type(self.classifier), self.classifierFilename())
                 pickle.dump(self.classifier, f)
 
     def loadClassifier(self, classifierName, indicator):
@@ -196,7 +197,6 @@ def main(argv=None):
 
     global pc
     feature_extractor=lookupFeatureExtractor(indicator)
-    print "Feature extractor %s => %s" % (indicator, feature_extractor)
     pc = PostClassifier(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
                         indicator=indicator, feature_extractor=feature_extractor,
                         load=args.load, save=args.save, apply=args.apply, 
@@ -204,19 +204,24 @@ def main(argv=None):
     pc.label(pc.positiveClass)
     pc.allocate()
     if args.load:
-        print "LOADING PHASE"
+        if pc.verbose:
+            print >> sys.stderr, "LOADING"
         pc.loadClassifier(pc.positiveClass, pc.indicator)
     else:
-        print "BUILDING PHASE"
+        if pc.verbose:
+            print >> sys.stderr, "BUILDING"
         pc.buildClassifier()
     if args.test:
-        print "TESTING PHASE"
+        if pc.verbose:
+            print >> sys.stderr, "TESTING"
         pc.testClassifier()
     if args.save:
-        print "SAVING PHASE"
+        if pc.verbose:
+            print >> sys.stderr, "SAVING"
         pc.saveClassifier()
     if args.apply:
-        print "APPLYING PHASE"
+        if pc.verbose:
+            print >> sys.stderr, "APPLYING"
         result = pc.applyClassifier(pc.apply)
         print >> sys.stdout, json.dumps(result, indent=4)
 
