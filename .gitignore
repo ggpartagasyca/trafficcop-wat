@@ -59,5 +59,10 @@ target/
 # emacs
 *~
 
+# gzip
+*.tgz
+*.gz
+
 # specific
 wat/escort/test/*
+wat/learn/attic/*
