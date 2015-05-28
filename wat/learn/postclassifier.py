@@ -53,7 +53,7 @@ def lookupFeatureExtractor(indicator):
 class PostClassifier(object):
     def __init__(self, positiveClass, trainSize=20, testSize=20, validateSize=20,
                  feature_extractor=None, indicator=None,
-                 save=False, verbose=False, load=False):
+                 save=False, verbose=False, load=False, apply=False):
         self.positiveClass = positiveClass
         self.trainSize = trainSize
         self.testSize = testSize
@@ -63,6 +63,7 @@ class PostClassifier(object):
 
         self.load = load
         self.save = save
+        self.apply = apply
         self.verbose = verbose
 
     def label(self, positiveClass):
