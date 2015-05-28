@@ -1,6 +1,16 @@
 #!/bin/sh
 
-INPUT='Welcome to Paradise Spa'
+# INPUT='Welcome to Paradise Spa'
+# echo healthspa-default
+# python postclassifier.py -v --name healthspa -i default --load --test 0 --apply "$INPUT"
+
+
+INPUT='<html><body>No black men please</body></html>'
+echo race-default
+python postclassifier.py -v --name race -i ci --load --test 0 --type html --apply "$INPUT"
+
+exit
+
 
 echo age-cs
 python postclassifier.py -v --name age -i cs --load --test 0 --apply "$INPUT"
