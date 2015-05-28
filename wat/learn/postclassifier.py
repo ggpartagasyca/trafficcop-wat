@@ -150,6 +150,12 @@ Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, ac
                 self.positiveClass = classifierName
                 self.indicator = indicator
 
+    def applyClassifier(self, input):
+        classifierName = self.positiveClass
+        indicator = self.indicator
+        with timeblock("executing %s %s classifier" % (classifierName, indicator), self.verbose):
+            print "dummy"
+
 pc = None
 
 def main(argv=None):
@@ -163,31 +169,30 @@ def main(argv=None):
     parser.add_argument('--train', required=False, help='training size', default=800, type=int)
     parser.add_argument('--test', required=False, help='training size', default=100, type=int)
     parser.add_argument('--validate', required=False, help='training size', default=100, type=int)
+    parser.add_argument('--apply', required=False, help='apply')
     args=parser.parse_args()
 
     positiveClass = args.positive
     indicator = args.indicator
-    load = args.load
-    save = args.save
-    verbose = args.verbose
-    test = True
 
     global pc
     feature_extractor=lookupFeatureExtractor(indicator)
     print "Feature extractor %s => %s" % (indicator, feature_extractor)
     pc = PostClassifier(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
                         indicator=indicator, feature_extractor=feature_extractor,
-                        load=load, save=save, verbose=verbose)
+                        load=args.load, save=args.save, apply=args.apply, verbose=args.verbose)
     pc.label(pc.positiveClass)
     pc.allocate()
-    if load:
+    if args.load:
         pc.loadClassifier(pc.positiveClass, pc.indicator)
     else:
         pc.buildClassifier()
-    if test:
+    if args.test:
         pc.testClassifier()
     if args.save:
         pc.saveClassifier()
+    if args.apply:
+        pc.applyClassifier(pc.apply)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
