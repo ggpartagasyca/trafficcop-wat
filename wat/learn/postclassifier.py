@@ -195,8 +195,10 @@ def main(argv=None):
     positiveClass = args.name
     indicator = args.indicator
 
-    global pc
+    if args.verbose:
+        print >> sys.stderr, "INITIALIZING"
     feature_extractor=lookupFeatureExtractor(indicator)
+    global pc
     pc = PostClassifier(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
                         indicator=indicator, feature_extractor=feature_extractor,
                         load=args.load, save=args.save, apply=args.apply, 
