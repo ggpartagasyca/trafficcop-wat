@@ -20,7 +20,7 @@ def timeblock(label, verbose=False):
     finally:
         end = time.clock()
         if verbose:
-            print ('{} : {}'.format(label, end - start))
+            print ('{} : {} seconds'.format(label, end - start))
 
 def safediv(numerator, denominator, default=None):
     if denominator:
@@ -29,9 +29,17 @@ def safediv(numerator, denominator, default=None):
         return default
 
 def ci_extractor(document):
+    """Only records positive features"""
     features = {}
     for token in document.split():
         features["contains_ci(%s)" % token.upper()] = True
+    return features
+
+def cs_extractor(document):
+    """Only records positive features"""
+    features = {}
+    for token in document.split():
+        features["contains_cs(%s)" % token] = True
     return features
 
 def lookupFeatureExtractor(indicator):
@@ -59,7 +67,7 @@ class Learnblob(object):
 
     def label(self, positiveClass):
         if self.verbose:
-            print "loading and labling texts for %s" % positiveClass
+            print "loading and labeling texts for %s" % positiveClass
         self.labeledTexts = []
         for url,tags in filetags.iteritems():
             text = ' '.join(urlBodyTokens(canonUrl(url)))
@@ -69,9 +77,10 @@ class Learnblob(object):
                 self.labeledTexts.append( (text, 'neg') )
         random.shuffle(self.labeledTexts)
         if self.verbose:
-            print "finished labeling texts"
+            print "finished labeling %d texts" % len(self.labeledTexts)
        
     def allocate(self):
+        """Break up the entire set of labeled texts, typically in 80/10/10 ratio"""
         self.trainingSet = self.labeledTexts[0:self.trainSize]
         self.testSet = self.labeledTexts[self.trainSize:self.trainSize+self.testSize]
         self.validateSet = self.labeledTexts[self.trainSize+self.testSize:self.trainSize+self.testSize+self.validateSize]
@@ -79,9 +88,11 @@ class Learnblob(object):
     def buildClassifier(self):
         # positiveClass is a tag such as 'race'
         # race(pos) vs everything else(neg)
-
         with timeblock("training %s classifier" % self.positiveClass, self.verbose):
-            cl = NaiveBayesClassifier(self.trainingSet, feature_extractor=self.feature_extractor)
+            if self.feature_extractor:
+                cl = NaiveBayesClassifier(self.trainingSet, feature_extractor=self.feature_extractor)
+            else:
+                cl = NaiveBayesClassifier(self.trainingSet)
             self.classifier = cl
             if self.verbose:
                 print "classifier %r" % cl
@@ -107,27 +118,29 @@ class Learnblob(object):
         recall = safediv(tp, tp+fn)
         f1 = safediv(2*tp, 2*tp + fp + fn)
         accuracy = self.classifier.accuracy(self.testSet)
-        print """positiveClass: %s
-TP: %s
-TN: %s
-FP: %s
-FN: %s
-precision: %s
-recall: %s
-f1: %s
-accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, accuracy)
+        if self.verbose:
+            print """positiveClass: %s
+True Positive: %s
+True Negative: %s
+False Positive: %s
+False Negative: %s
+Precision: %s
+Recall: %s
+F1: %s
+Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, accuracy)
 
     def classifierFilename(self, positiveClass=None, indicator=None):
         positiveClass = positiveClass or self.positiveClass
         indicator = indicator or self.indicator
         if indicator:
-            return 'dat/classifier/%s_%s_classifier.pickle' % (positiveClass, indicator)
+            return 'data/classifier/%s_%s_classifier.pickle' % (positiveClass, indicator)
         else:
-            return 'dat/classifier/%s_classifier.pickle' % (positiveClass)
+            return 'data/classifier/%s_default_classifier.pickle' % (positiveClass)
 
     def saveClassifier(self):
         with timeblock("saving %s %s classifier" % (self.positiveClass, self.indicator), self.verbose):
             with open(self.classifierFilename(), 'wb') as f:
+                print "saving object %s of type %s to %s" % (self.classifier, type(self.classifier), self.classifierFilename())
                 pickle.dump(self.classifier, f)
 
     def loadClassifier(self, classifierName, indicator):
@@ -146,7 +159,7 @@ def main(argv=None):
     parser.add_argument('-l','--load', required=False, help='load', action='store_true')
     parser.add_argument('-s','--save', required=False, help='save', action='store_true')
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
-    parser.add_argument('-i','--indicator', required=False, help='indicator', default=None)
+    parser.add_argument('-i','--indicator', required=False, help='indicator', default='cs')
     parser.add_argument('--train', required=False, help='training size', default=800, type=int)
     parser.add_argument('--test', required=False, help='training size', default=100, type=int)
     parser.add_argument('--validate', required=False, help='training size', default=100, type=int)
@@ -160,8 +173,10 @@ def main(argv=None):
     test = True
 
     global bl
+    feature_extractor=lookupFeatureExtractor(indicator)
+    print "Feature extractor %s => %s" % (indicator, feature_extractor)
     bl = Learnblob(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
-                   indicator=indicator, feature_extractor=lookupFeatureExtractor(indicator),
+                   indicator=indicator, feature_extractor=feature_extractor,
                    load=load, save=save, verbose=verbose)
     bl.label(bl.positiveClass)
     bl.allocate()
