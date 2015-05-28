@@ -5,6 +5,7 @@ import argparse
 import random
 random.seed(10)
 import cPickle as pickle
+import json
 
 from textblob.classifiers import NaiveBayesClassifier
 
@@ -154,15 +155,20 @@ Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, ac
     def applyClassifier(self, input):
         classifierName = self.positiveClass
         indicator = self.indicator
-        with timeblock("executing %s %s classifier" % (classifierName, indicator), self.verbose):
-            print "dummy"
+        text = input
+        with timeblock("applying %s %s classifier" % (classifierName, indicator), self.verbose):
+            prob_dist = self.classifier.prob_classify(text)
+            result = {"input": input,
+                      "class": self.positiveClass,
+                      "prob": prob_dist.prob("pos")}
+            return result
 
 pc = None
 
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument("positive", help='tag of positive class')
+    parser.add_argument('-n','--name','--positive', required=True, help='name, tag of positive class')
     parser.add_argument('-l','--load', required=False, help='load', action='store_true')
     parser.add_argument('-s','--save', required=False, help='save', action='store_true')
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
@@ -173,7 +179,7 @@ def main(argv=None):
     parser.add_argument('--apply', required=False, help='apply')
     args=parser.parse_args()
 
-    positiveClass = args.positive
+    positiveClass = args.name
     indicator = args.indicator
 
     global pc
@@ -185,15 +191,22 @@ def main(argv=None):
     pc.label(pc.positiveClass)
     pc.allocate()
     if args.load:
+        print "LOADING PHASE"
         pc.loadClassifier(pc.positiveClass, pc.indicator)
     else:
+        print "BUILDING PHASE"
         pc.buildClassifier()
     if args.test:
+        print "TESTING PHASE"
         pc.testClassifier()
     if args.save:
+        print "SAVING PHASE"
         pc.saveClassifier()
     if args.apply:
-        pc.applyClassifier(pc.apply)
+        print "APPLYING PHASE"
+        result = pc.applyClassifier(pc.apply)
+        print >> sys.stdout, json.dumps(result, indent=4)
+
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
