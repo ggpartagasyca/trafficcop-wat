@@ -15,15 +15,29 @@ Options:
 '''
 
 import sys
-import re
-from collections import defaultdict
 import codecs
-import pprint
 import argparse
 import json
 
-from wat.tool.wattok import Tokenizer
+from learnblob import Learnblob
 
+CATEGORY='healthspa'
+
+class Applier(object):
+    def __init__(self, category=CATEGORY, indicator='default',
+                 verbose=True):
+        self.category = category
+        self.indicator = indicator
+        self.verbose = verbose
+
+        self.blob = Learnblob(self.category, indicator=self.indicator, load=True, save=False)
+        self.blob.loadClassifier(self.category, self.indicator)
+        print self.blob
+
+    def applyClassifier(self, text):
+        prob_dist = self.blob.classifier.prob_classify(text)
+        result = {"prob": prob_dist.prob("pos")}
+        return result
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -31,8 +45,6 @@ def main(argv=None):
     parser.add_argument('input')
     parser.add_argument('-c','--category', required=False, 
                         help='major category of rules to apply (default: use all)')
-    parser.add_argument('-f','--family', required=False,
-                        help='minor category of rules to apply (default: use all)')
     parser.add_argument('-i','--indicator', required=False,
                         help='Indicate precise rule as X.Y.Z')
     parser.add_argument('-t','--type', required=False, default='text',
@@ -46,14 +58,12 @@ def main(argv=None):
             from pymod.htmlextract import extract_text
             text = extract_text(text)
 
-    tok = Tokenizer(text)
-    tokens = [t for t in tok.genTokens()]
-    result = patternScan(tokens, category=args.category, 
-                         family=args.family, indicator=args.indicator)
+    a = Applier(category=args.category, indicator=args.indicator, verbose=args.verbose)
+    result = a.applyClassifier(text)
     print >> sys.stdout, json.dumps(result, indent=4)
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
     sys.exit(main())
 
-# End of patscan.py
+# End of applyclassifier.py
