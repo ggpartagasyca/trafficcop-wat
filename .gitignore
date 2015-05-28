@@ -58,3 +58,6 @@ target/
 
 # emacs
 *~
+
+# specific
+wat/escort/test/*
