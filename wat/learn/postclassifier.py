@@ -50,7 +50,7 @@ def lookupFeatureExtractor(indicator):
 # blob = TextBlob("I'm excited to try my new classifier.", classifier=cl2)
 # blob.classify()
 
-class Learnblob(object):
+class PostClassifier(object):
     def __init__(self, positiveClass, trainSize=20, testSize=20, validateSize=20,
                  feature_extractor=None, indicator=None,
                  save=False, verbose=False, load=False):
@@ -150,7 +150,7 @@ Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, ac
                 self.positiveClass = classifierName
                 self.indicator = indicator
 
-bl = None
+pc = None
 
 def main(argv=None):
     '''this is called if run from command line'''
@@ -172,22 +172,22 @@ def main(argv=None):
     verbose = args.verbose
     test = True
 
-    global bl
+    global pc
     feature_extractor=lookupFeatureExtractor(indicator)
     print "Feature extractor %s => %s" % (indicator, feature_extractor)
-    bl = Learnblob(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
-                   indicator=indicator, feature_extractor=feature_extractor,
-                   load=load, save=save, verbose=verbose)
-    bl.label(bl.positiveClass)
-    bl.allocate()
+    pc = PostClassifier(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
+                        indicator=indicator, feature_extractor=feature_extractor,
+                        load=load, save=save, verbose=verbose)
+    pc.label(pc.positiveClass)
+    pc.allocate()
     if load:
-        bl.loadClassifier(bl.positiveClass, bl.indicator)
+        pc.loadClassifier(pc.positiveClass, pc.indicator)
     else:
-        bl.buildClassifier()
+        pc.buildClassifier()
     if test:
-        bl.testClassifier()
+        pc.testClassifier()
     if args.save:
-        bl.saveClassifier()
+        pc.saveClassifier()
 
 # call main() if this is run as standalone
 if __name__ == "__main__":
