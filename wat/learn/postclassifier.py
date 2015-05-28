@@ -54,7 +54,7 @@ def lookupFeatureExtractor(indicator):
 class PostClassifier(object):
     def __init__(self, positiveClass, trainSize=20, testSize=20, validateSize=20,
                  feature_extractor=None, indicator=None,
-                 save=False, verbose=False, load=False, apply=False):
+                 save=False, verbose=False, load=False, apply=False, type='text'):
         self.positiveClass = positiveClass
         self.trainSize = trainSize
         self.testSize = testSize
@@ -65,6 +65,7 @@ class PostClassifier(object):
         self.load = load
         self.save = save
         self.apply = apply
+        self.inputType = type
         self.verbose = verbose
 
     def label(self, positiveClass):
@@ -155,7 +156,16 @@ Accuracy: %s""" % (self.positiveClass, tp, tn, fp, fn, precision, recall, f1, ac
     def applyClassifier(self, input):
         classifierName = self.positiveClass
         indicator = self.indicator
+        if input == '-':
+            # special case, read from stdin
+            input = sys.stdin.read()
+
         text = input
+
+        if self.inputType == 'html':
+            from pymod.htmlextract import extract_text
+            text = extract_text(text)
+
         with timeblock("applying %s %s classifier" % (classifierName, indicator), self.verbose):
             prob_dist = self.classifier.prob_classify(text)
             result = {"input": input,
@@ -173,6 +183,8 @@ def main(argv=None):
     parser.add_argument('-s','--save', required=False, help='save', action='store_true')
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
     parser.add_argument('-i','--indicator', required=False, help='indicator', default='cs')
+    parser.add_argument('-t','--type', required=False, default='text',
+                        help='input file type', choices=('text', 'html'))
     parser.add_argument('--train', required=False, help='training size', default=800, type=int)
     parser.add_argument('--test', required=False, help='training size', default=100, type=int)
     parser.add_argument('--validate', required=False, help='training size', default=100, type=int)
@@ -187,7 +199,8 @@ def main(argv=None):
     print "Feature extractor %s => %s" % (indicator, feature_extractor)
     pc = PostClassifier(positiveClass, trainSize=args.train, testSize=args.test, validateSize=args.validate, 
                         indicator=indicator, feature_extractor=feature_extractor,
-                        load=args.load, save=args.save, apply=args.apply, verbose=args.verbose)
+                        load=args.load, save=args.save, apply=args.apply, 
+                        type=args.type, verbose=args.verbose)
     pc.label(pc.positiveClass)
     pc.allocate()
     if args.load:
