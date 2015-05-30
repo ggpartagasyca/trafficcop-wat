@@ -1,3 +1,9 @@
+			 LEARNED CLASSIFIERS
+
+Andrew Philpot 
+29 May 2015
+philpot@isi.edu
+
 DATA
 
 For experiment wat_annot_escort_01, I annotated 1000 backpage posts

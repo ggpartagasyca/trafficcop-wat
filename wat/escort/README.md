@@ -1,4 +1,8 @@
-PATSCAN KEYWORD RULE BASED CLASSIFICATION
+	      PATSCAN KEYWORD RULE BASED CLASSIFICATION
+
+Andrew Philpot 
+29 May 2015
+philpot@isi.edu
 
 Pattern ("keyword") rules were developed by hand to using sequences of
 terms within a document.  The document text is split into words using

@@ -1,6 +1,8 @@
-TrafficCop WAT ad classifiers.
+		    TrafficCop WAT ad classifiers
 
-Philpot 29 May 2015
+Andrew Philpot 
+29 May 2015
+philpot@isi.edu
 
 This Github repository project contains two independently developed
 capabilities for classifying escort posts.
