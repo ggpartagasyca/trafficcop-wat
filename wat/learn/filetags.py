@@ -15,6 +15,13 @@ testUrls = [# locally served URLs
             '/Users/philpot/project/wat/branches/dig-18/wat/learn/dat/wat_annot_escort_01/watsortdesk/data/backpage/20150201/anchorage.backpage.com/FemaleEscorts/two-for-one/3962559'
             ]
 
+# NEEDS REFACTORING
+# old static location
+# /Users/philpot/Documents/project/wat/branches/dig-18/wat/learn/dat/wat_annot_escort_01/watsortdesk/data/backpage
+# new static location
+# /Users/philpot/Documents/project/trafficcop-wat/wat/learn/data/raw/wat_annot_escort_01/watsortdesk/data/backpage
+# offsets likely would need to be edited too
+
 def canonUrl(thing):
     if thing.startswith('http://localhost'):
         return "http://" + thing[52:]
@@ -35,7 +42,8 @@ def canonUrl(thing):
 def experimentFile(thing, date='20150201'):
     url = canonUrl(thing)
     # return "/Users/philpot/Documents/project/wat/branches/annotate/dat/wat_annot_escort_01/watsortdesk/data/backpage/" + str(date) + '/' + url[7:]
-    return "/Users/philpot/Documents/project/wat/branches/dig-18/wat/learn/dat/wat_annot_escort_01/watsortdesk/data/backpage/" + str(date) + '/' + url[7:]
+    # return "/Users/philpot/Documents/project/wat/branches/dig-18/wat/learn/dat/wat_annot_escort_01/watsortdesk/data/backpage/" + str(date) + '/' + url[7:]
+    return "/Users/philpot/Documents/project/trafficcop-wat/wat/learn/data/raw/wat_annot_escort_01/watsortdesk/data/backpage/" + str(date) + '/' + url[7:]
 
 # for testUrl in testUrls:
 #     print canonUrl(testUrl)
