@@ -11,30 +11,27 @@
 
 # exit
 
+indicators=( ci cs default )
+
 for fullfile in data/test/*; do
     filename=$(basename "$fullfile")
     extension="${filename##*.}"
     filename="${filename%.*}"
     if [ "$extension" = "html" ] ;
     then
-	python postclassifier.py -v -n age -i ci --load --test 0 --type html --apply "`cat $fullfile`"
+	type='html'
     else
-	python postclassifier.py -v -n age -i ci --load --test 0 --type text --apply "`cat $fullfile`"
+	type='text'
     fi
+    INPUT=`cat $fullfile`
+    for indicator in "${indicators[@]}"
+    do
+	python postclassifier.py -v -n age -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n race -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n multi -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n agency -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n healthspa -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n offtopic -i $indicator --load --test 0 --type $type --apply "$INPUT"
+	python postclassifier.py -v -n typical -i $indicator --load --test 0 --type $type --apply "$INPUT"
+    done
 done
-exit
-
-echo age-ci
-python postclassifier.py -v -n age -i ci --load --test 0 --apply "$INPUT"
-echo race-ci
-python postclassifier.py -v -n race -i ci --load --test 0 --apply "$INPUT"
-echo multi-ci
-python postclassifier.py -v -n multi -i ci --load --test 0 --apply "$INPUT"
-echo agency-ci
-python postclassifier.py -v -n agency -i ci --load --test 0 --apply "$INPUT"
-echo healthspa-ci
-python postclassifier.py -v -n healthspa -i ci --load --test 0 --apply "$INPUT"
-echo offtopic-ci
-python postclassifier.py -v -n offtopic -i ci --load --test 0 --apply "$INPUT"
-echo typical-ci
-python postclassifier.py -v -n typical -i ci --load --test 0 --apply "$INPUT"
