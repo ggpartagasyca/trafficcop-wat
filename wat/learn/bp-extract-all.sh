@@ -1,6 +1,6 @@
 #!/bin/sh
 
-FILES=`cat wat_annot_escort_01.files`
+FILES=`cat raw_data_manifest.txt`
 
 for FILE in ${FILES[@]};
 do 
