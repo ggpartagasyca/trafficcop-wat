@@ -67,7 +67,7 @@ filetags = defaultdict(set)
 for tsv in TSVS:
     tag,_ = os.path.splitext(tsv)
     tag = tag.lstrip('.')
-    with open('./data/input/tsv/' + tsv, 'r') as f:
+    with open('data/input/tsv/' + tsv, 'r') as f:
         for url in f:
             url = canonUrl(url.strip())
             filetags[url].add(tag)
