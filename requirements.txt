@@ -10,3 +10,4 @@ stevedore>=0.8
 regex
 lxml
 BeautifulSoup4
+textblob
