@@ -179,16 +179,17 @@ pc = None
 def main(argv=None):
     '''this is called if run from command line'''
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n','--name','--positive', required=True, help='name, tag of positive class')
+    parser.add_argument('-n','--name','--positive', required=True, help='name, tag of positive class',
+                        choices=('age','agency', 'healthspa', 'multi', 'race', 'typical', 'offtopic'))
     parser.add_argument('-l','--load', required=False, help='load', action='store_true')
     parser.add_argument('-s','--save', required=False, help='save', action='store_true')
     parser.add_argument('-v','--verbose', required=False, help='verbose', action='store_true')
-    parser.add_argument('-i','--indicator', required=False, help='indicator', default='cs')
+    parser.add_argument('-i','--indicator','--featureset','--tokenizer', required=False, help='indicator', default='cs')
     parser.add_argument('-t','--type', required=False, default='text',
                         help='input file type', choices=('text', 'html'))
     parser.add_argument('--train', required=False, help='training size', default=800, type=int)
-    parser.add_argument('--test', required=False, help='training size', default=100, type=int)
-    parser.add_argument('--validate', required=False, help='training size', default=100, type=int)
+    parser.add_argument('--test', required=False, help='test set size', default=100, type=int)
+    parser.add_argument('--validate', required=False, help='validation set size', default=100, type=int)
     parser.add_argument('--apply', required=False, help='apply')
     args=parser.parse_args()
 
@@ -221,6 +222,10 @@ def main(argv=None):
         if pc.verbose:
             print >> sys.stderr, "SAVING"
         pc.saveClassifier()
+    if args.validate:
+        if pc.verbose:
+            print >> sys.stderr, "VALIDATING"
+            print >> sys.stderr, "NOT IMPLEMTED YET"
     if args.apply:
         if pc.verbose:
             print >> sys.stderr, "APPLYING"
