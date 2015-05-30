@@ -446,13 +446,13 @@ Phrase((32,1,3), "notagency", "enforcement", r"""(?V1)<(?i)%s> <(?i)%s>""" % (v(
 # SECTION 91: superbowl
 Phrase((91,1,1), "superbowl", "superbowl", r"""(?V1)<(?i)SUPERBOWL>""", 1)
 Phrase((91,1,2), "superbowl", "super bowl", r"""(?V1)<(?i)SUPER> (?V1)<(?i)BOWL>""", 1)
-Phrase((91,2,1), "meadowlands", "meadowlands", r"""(?V1)<(?i)MEADOWLANDS>""", 1)
-Phrase((91,2,2), "meadowlands", "meadow lands", r"""(?V1)<(?i)MEADOW> (?V1)<(?i)LANDS>""", 1)
+Phrase((91,2,1), "superbowl", "meadowlands", r"""(?V1)<(?i)MEADOWLANDS>""", 1)
+Phrase((91,2,2), "superbowl", "meadow lands", r"""(?V1)<(?i)MEADOW> (?V1)<(?i)LANDS>""", 1)
 
-# SECTION 92: superbowl
+# SECTION 92: NBA
 Phrase((92,1,1), "NBA", "NBA", r"""(?V1)<(?i)NBA>""", 1)
-Phrase((92,2,1), "allstar", "allstar", r"""(?V1)<(?i)allstar>""", 1)
-Phrase((92,2,2), "allstar", "all star", r"""(?V1)<(?i)ALL> <->? (?V1)<(?i)STAR>""", 1)
+Phrase((92,2,1), "NBA", "allstar", r"""(?V1)<(?i)allstar>""", 1)
+Phrase((92,2,2), "NBA", "all star", r"""(?V1)<(?i)ALL> <->? (?V1)<(?i)STAR>""", 1)
 
 def main(argv=None):
     '''this is called if run from command line'''
